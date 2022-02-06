@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"log"
 	"math/rand"
@@ -30,8 +31,12 @@ var (
 )
 
 func main() {
+	run(os.Stdin)
+}
+
+func run(ioReader io.Reader) {
+	reader := bufio.NewReader(ioReader)
 	word := getWord()
-	reader := bufio.NewReader(os.Stdin)
 	fmt.Println(fmt.Sprintf("Guess a %v-letter word...", wordLength))
 
 	for guessCount := 0; guessCount < maxGuesses; guessCount++ {
@@ -64,6 +69,7 @@ func main() {
 }
 
 func getWord() string {
+	// NOTE: this list inludes many uncommon and seemingly not-English words. Is there a better data source?
 	res, err := http.Get("https://raw.githubusercontent.com/dwyl/english-words/master/words_alpha.txt")
 	if err != nil {
 		log.Fatalln(err)
