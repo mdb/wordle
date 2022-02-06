@@ -48,7 +48,6 @@ func main() {
 		}
 
 		if len(guess) == len(word) {
-			fmt.Println()
 			displayWordleGrid(guess, word)
 		}
 
