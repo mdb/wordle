@@ -11,3 +11,12 @@ Run tests and compile `wordle` release artifacts:
 ```
 make
 ```
+
+## Improvement ideas
+
+* https://raw.githubusercontent.com/dwyl/english-words/master/words_alpha.txt returns some tricky and uncommon words; is there a better data source from which to retrieve words?
+* Could https://github.com/rivo/tview enable some UI improvements?
+* It'd be nice to be able to `brew install wordle`
+* Would it be helpful to display all 6 rows of the wordle grid, even in instances where the player guessed correctly before the 6th attempt?
+* Is `wordle --help` worthwhile?
+* `wordle --version` is probably worthwhile, right?
