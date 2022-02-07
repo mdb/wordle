@@ -35,17 +35,13 @@ func main() {
 }
 
 func run(ioReader io.Reader) {
-	reader := bufio.NewReader(ioReader)
+	reader := bufio.NewScanner(ioReader)
 	word := getWord()
 	fmt.Println(fmt.Sprintf("Guess a %v-letter word...", wordLength))
 
 	for guessCount := 0; guessCount < maxGuesses; guessCount++ {
-		guess, err := reader.ReadString('\n')
-		if err != nil {
-			log.Fatalln(err)
-		}
-
-		guess = strings.ToUpper(guess[:len(guess)-1])
+		reader.Scan()
+		guess := strings.ToUpper(reader.Text())
 
 		if len(guess) != len(word) {
 			fmt.Println(fmt.Sprintf("%s is not a a %v-letter word. Try again...", guess, wordLength))
