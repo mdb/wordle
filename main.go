@@ -31,11 +31,14 @@ var (
 )
 
 func main() {
-	run(os.Stdin)
+	f := os.Stdin
+	defer f.Close()
+
+	run(os.Stdin, f)
 }
 
-func run(ioReader io.Reader) {
-	reader := bufio.NewScanner(ioReader)
+func run(in io.Reader, out io.Writer) {
+	reader := bufio.NewScanner(in)
 	word := getWord()
 	fmt.Println(fmt.Sprintf("Guess a %v-letter word...", wordLength))
 
@@ -43,8 +46,12 @@ func run(ioReader io.Reader) {
 		reader.Scan()
 		guess := strings.ToUpper(reader.Text())
 
+		if guess == "STOP" {
+			break
+		}
+
 		if len(guess) != len(word) {
-			fmt.Println(fmt.Sprintf("%s is not a a %v-letter word. Try again...", guess, wordLength))
+			out.Write([]byte(fmt.Sprintf("%s is not a %v-letter word. Try again...\n", guess, wordLength)))
 			guessCount--
 		}
 
