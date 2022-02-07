@@ -31,15 +31,16 @@ var (
 )
 
 func main() {
+	word := getWord()
+
 	f := os.Stdin
 	defer f.Close()
 
-	run(os.Stdin, f)
+	run(word, os.Stdin, f)
 }
 
-func run(in io.Reader, out io.Writer) {
+func run(word string, in io.Reader, out io.Writer) {
 	reader := bufio.NewScanner(in)
-	word := getWord()
 	fmt.Println(fmt.Sprintf("Guess a %v-letter word...", wordLength))
 
 	for guessCount := 0; guessCount < maxGuesses; guessCount++ {
@@ -51,12 +52,12 @@ func run(in io.Reader, out io.Writer) {
 		}
 
 		if len(guess) != len(word) {
-			out.Write([]byte(fmt.Sprintf("%s is not a %v-letter word. Try again...\n", guess, wordLength)))
+			write(fmt.Sprintf("%s is not a %v-letter word. Try again...\n", guess, wordLength), out)
 			guessCount--
 		}
 
 		if len(guess) == len(word) {
-			displayWordleGrid(guess, word)
+			displayWordleGrid(guess, word, out)
 		}
 
 		if guess == word {
@@ -65,10 +66,14 @@ func run(in io.Reader, out io.Writer) {
 
 		if guessCount == maxGuesses-1 {
 			fmt.Println()
-			displayWordleRow(word, getLetterTileColors(word, word))
+			displayWordleRow(word, getLetterTileColors(word, word), out)
 			os.Exit(1)
 		}
 	}
+}
+
+func write(str string, out io.Writer) {
+	out.Write([]byte(str))
 }
 
 func getWord() string {
@@ -119,31 +124,31 @@ func getLetterTileColors(guess string, word string) [wordLength]tileColor {
 	return colors
 }
 
-func displayWordleGrid(guess string, word string) {
+func displayWordleGrid(guess string, word string, out io.Writer) {
 	tileColors := getLetterTileColors(guess, word)
 	guesses = append(guesses, map[string][wordLength]tileColor{guess: tileColors})
 
 	for _, guess := range guesses {
 		for g, colorVect := range guess {
-			displayWordleRow(g, colorVect)
+			displayWordleRow(g, colorVect, out)
 		}
 	}
 }
 
-func displayWordleRow(word string, colors [wordLength]tileColor) {
+func displayWordleRow(word string, colors [wordLength]tileColor, out io.Writer) {
 	for i, c := range word {
 		switch colors[i] {
 		case green:
-			fmt.Print("\033[42m\033[1;30m")
+			write("\033[42m\033[1;30m", out)
 		case yellow:
-			fmt.Print("\033[43m\033[1;30m")
+			write("\033[43m\033[1;30m", out)
 		case gray:
-			fmt.Print("\033[40m\033[1;37m")
+			write("\033[40m\033[1;37m", out)
 		}
 
-		fmt.Printf(" %c ", c)
-		fmt.Print("\033[m\033[m")
+		write(fmt.Sprintf(" %c ", c), out)
+		write("\033[m\033[m", out)
 	}
 
-	fmt.Println()
+	write("\n", out)
 }
