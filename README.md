@@ -42,4 +42,6 @@ make
 * https://raw.githubusercontent.com/dwyl/english-words/master/words_alpha.txt returns some tricky and uncommon words; is there a better data source from which to retrieve words?
 * Could https://github.com/rivo/tview enable some UI improvements? Or is that overkill?
 * It'd be nice to be able to `brew install wordle`
+* Is there a way to display the total available letters, similar to the [Wordle](https://powerlanguage.co.uk/wordle/) keyboard?
 * Would it be cool to provide an option to output the final grid as an image, such that it could be shared?
+* Would it be cool to restrict game play to once/day?
