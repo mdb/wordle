@@ -1,4 +1,4 @@
-VERSION = 0.0.1
+VERSION = 0.0.2
 SOURCE = ./...
 
 .DEFAULT_GOAL := build
