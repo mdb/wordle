@@ -121,7 +121,9 @@ func (w *wordle) run() {
 	w.write("About: \t\tA CLI adaptation of Josh Wardle's Wordle (https://powerlanguage.co.uk/wordle/)\n\n")
 	w.write(fmt.Sprintf("Guess a %v-letter word within %v guesses...\n", w.wordLength, w.maxGuesses))
 
-	for guessCount := 0; guessCount < maxGuesses; guessCount++ {
+	for guessCount := 0; guessCount < w.maxGuesses; guessCount++ {
+		w.write(fmt.Sprintf("\nGuess (%v/%v): ", len(w.guesses)+1, maxGuesses))
+
 		reader.Scan()
 		guess := strings.ToUpper(reader.Text())
 
