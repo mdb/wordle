@@ -4,6 +4,31 @@ A Go-based `wordle` CLI.
 
 [Josh Wardle](https://github.com/powerlanguage) deserves credit for creating [Wordle](https://www.powerlanguage.co.uk/wordle/); this is just a command line interface implementation of his creation.
 
+<img src="wordle.png" />
+
+## Installation
+
+Download the [latest release](https://github.com/mdb/wordle/releases) for your platform.
+
+Alternatively, you can compile from source:
+
+```
+make
+```
+
+...and run the compiled `wordle` for your platform:
+
+```
+dist/wordle_darwin_amd64/wordle
+Version:        0.0.1
+Info:           https://github.com/mdb/wordle
+About:          A CLI adaptation of Josh Wardle's Wordle (https://powerlanguage.co.uk/wordle/)
+
+Guess a 5-letter word within 6 guesses...
+
+Guess (1/6):
+```
+
 ## Development
 
 Run tests and compile `wordle` release artifacts:
