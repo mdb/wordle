@@ -57,7 +57,7 @@ func run(word string, in io.Reader, out io.Writer) {
 		}
 
 		if len(guess) == len(word) {
-			displayWordleGrid(guess, word, out)
+			displayWordleGrid(guess, word, out, guessCount)
 		}
 
 		if guess == word {
@@ -124,15 +124,17 @@ func getLetterTileColors(guess string, word string) [wordLength]tileColor {
 	return colors
 }
 
-func displayWordleGrid(guess string, word string, out io.Writer) {
+func displayWordleGrid(guess string, word string, out io.Writer, guessCount int) {
 	tileColors := getLetterTileColors(guess, word)
 	guesses = append(guesses, map[string][wordLength]tileColor{guess: tileColors})
 
 	for _, guess := range guesses {
-		for g, colorVect := range guess {
-			displayWordleRow(g, colorVect, out)
+		for g, colors := range guess {
+			displayWordleRow(g, colors, out)
 		}
 	}
+
+	displayEmptyWordleRows(word, out, guessCount)
 }
 
 func displayWordleRow(word string, colors [wordLength]tileColor, out io.Writer) {
@@ -151,4 +153,19 @@ func displayWordleRow(word string, colors [wordLength]tileColor, out io.Writer) 
 	}
 
 	write("\n", out)
+}
+
+func displayEmptyWordleRows(word string, out io.Writer, guessCount int) {
+	emptyGuessChars := []string{}
+	for i := 0; i < wordLength; i++ {
+		emptyGuessChars = append(emptyGuessChars, "*")
+	}
+
+	emptyGuess := strings.Join(emptyGuessChars, "")
+	emptyTileColors := getLetterTileColors(emptyGuess, word)
+	emptyRowCount := maxGuesses - guessCount - 1
+
+	for i := 0; i < emptyRowCount; i++ {
+		displayWordleRow(emptyGuess, emptyTileColors, out)
+	}
 }
