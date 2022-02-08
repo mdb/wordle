@@ -15,6 +15,10 @@ func TestRun(t *testing.T) {
 	}{{
 		word:   "SEAKS",
 		inputs: []string{"seaks"},
+		output: "https://github.com/mdb/wordle version",
+	}, {
+		word:   "SEAKS",
+		inputs: []string{"seaks"},
 		output: "Guess a 5-letter word within 6 guesses...\n",
 	}, {
 		word:   "BEACH",

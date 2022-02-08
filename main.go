@@ -27,12 +27,15 @@ const (
 )
 
 var (
-	guesses = []map[string][wordLength]tileColor{}
+	// passed in at build time
+	version string
+
+	usage   string = fmt.Sprintf("Guess a %v-letter word within %v guesses...\n", wordLength, maxGuesses)
+	guesses        = []map[string][wordLength]tileColor{}
 )
 
 func main() {
 	word := getWord()
-
 	f := os.Stdin
 	defer f.Close()
 
@@ -42,7 +45,8 @@ func main() {
 func run(word string, in io.Reader, out io.Writer) {
 	reader := bufio.NewScanner(in)
 
-	write(fmt.Sprintf("Guess a %v-letter word within %v guesses...\n", wordLength, maxGuesses), out)
+	write(fmt.Sprintf("https://github.com/mdb/wordle version %s\n\n", version), out)
+	write(usage, out)
 
 	for guessCount := 0; guessCount < maxGuesses; guessCount++ {
 		reader.Scan()
