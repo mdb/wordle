@@ -13,3 +13,24 @@ jobs:
         go-version: 1.17
     - name: Build
       run: make
+
+  build-and-publish-release:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    needs: build-snapshot
+    environment:
+      name: release
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: 1.17
+      - name: Create release tag
+        run: make tag
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build & Release
+        run: make release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
