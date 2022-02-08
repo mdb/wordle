@@ -13,6 +13,10 @@ func TestRun(t *testing.T) {
 		inputs []string
 		output string
 	}{{
+		word:   "SEAKS",
+		inputs: []string{"seaks"},
+		output: "Guess a 5-letter word within 6 guesses...\n",
+	}, {
 		word:   "BEACH",
 		inputs: []string{"see"},
 		output: "SEE is not a 5-letter word. Try again...\n",
@@ -52,7 +56,7 @@ func TestRun(t *testing.T) {
 	}}
 
 	for _, test := range tests {
-		t.Run(fmt.Sprintf("when '%s' is provided as input", strings.Join(test.inputs, ", ")), func(t *testing.T) {
+		t.Run(fmt.Sprintf("the word is '%s' and '%s' is provided as input", test.word, strings.Join(test.inputs, ", ")), func(t *testing.T) {
 			var command, result bytes.Buffer
 			defer result.Reset()
 

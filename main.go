@@ -41,7 +41,8 @@ func main() {
 
 func run(word string, in io.Reader, out io.Writer) {
 	reader := bufio.NewScanner(in)
-	fmt.Println(fmt.Sprintf("Guess a %v-letter word...", wordLength))
+
+	write(fmt.Sprintf("Guess a %v-letter word within %v guesses...\n", wordLength, maxGuesses), out)
 
 	for guessCount := 0; guessCount < maxGuesses; guessCount++ {
 		reader.Scan()
