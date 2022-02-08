@@ -32,12 +32,10 @@ var (
 )
 
 type wordle struct {
-	wordLength int
-	maxGuesses int
-	word       string
-	guesses    []map[string][wordLength]tileColor
-	in         io.Reader
-	out        io.Writer
+	word    string
+	guesses []map[string][wordLength]tileColor
+	in      io.Reader
+	out     io.Writer
 }
 
 func (w *wordle) displayRow(word string, colors [wordLength]tileColor) {
@@ -96,13 +94,13 @@ func (w *wordle) getLetterTileColors(guess string) [wordLength]tileColor {
 
 func (w *wordle) displayEmptyRows(guessCount int) {
 	emptyGuessChars := []string{}
-	for i := 0; i < w.wordLength; i++ {
+	for i := 0; i < wordLength; i++ {
 		emptyGuessChars = append(emptyGuessChars, "*")
 	}
 
 	emptyGuess := strings.Join(emptyGuessChars, "")
 	emptyTileColors := w.getLetterTileColors(emptyGuess)
-	emptyRowCount := w.maxGuesses - guessCount - 1
+	emptyRowCount := maxGuesses - guessCount - 1
 
 	for i := 0; i < emptyRowCount; i++ {
 		w.displayRow(emptyGuess, emptyTileColors)
@@ -119,9 +117,9 @@ func (w *wordle) run() {
 	w.write(fmt.Sprintf("Version: \t%s\n", version))
 	w.write("Info: \t\thttps://github.com/mdb/wordle\n")
 	w.write("About: \t\tA CLI adaptation of Josh Wardle's Wordle (https://powerlanguage.co.uk/wordle/)\n\n")
-	w.write(fmt.Sprintf("Guess a %v-letter word within %v guesses...\n", w.wordLength, w.maxGuesses))
+	w.write(fmt.Sprintf("Guess a %v-letter word within %v guesses...\n", wordLength, maxGuesses))
 
-	for guessCount := 0; guessCount < w.maxGuesses; guessCount++ {
+	for guessCount := 0; guessCount < maxGuesses; guessCount++ {
 		w.write(fmt.Sprintf("\nGuess (%v/%v): ", len(w.guesses)+1, maxGuesses))
 
 		reader.Scan()
@@ -154,11 +152,9 @@ func (w *wordle) run() {
 
 func newWordle(word string, in io.Reader, out io.Writer) *wordle {
 	return &wordle{
-		wordLength: wordLength,
-		maxGuesses: maxGuesses,
-		word:       word,
-		in:         in,
-		out:        out,
+		word: word,
+		in:   in,
+		out:  out,
 	}
 }
 
