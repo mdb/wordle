@@ -78,7 +78,8 @@ func TestRun(t *testing.T) {
 
 			fmt.Fprintf(&command, "stop\n")
 
-			run(test.word, &command, &result)
+			w := newWordle(test.word, &command, &result)
+			w.run()
 
 			got := result.String()
 			if !strings.Contains(got, test.output) {

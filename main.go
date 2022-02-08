@@ -29,26 +29,97 @@ const (
 var (
 	// passed in at build time
 	version string
-
-	usage   string = fmt.Sprintf("Guess a %v-letter word within %v guesses...\n", wordLength, maxGuesses)
-	guesses        = []map[string][wordLength]tileColor{}
 )
 
-func main() {
-	word := getWord()
-	f := os.Stdin
-	defer f.Close()
-
-	run(word, os.Stdin, f)
+type wordle struct {
+	wordLength int
+	maxGuesses int
+	word       string
+	guesses    []map[string][wordLength]tileColor
+	in         io.Reader
+	out        io.Writer
 }
 
-func run(word string, in io.Reader, out io.Writer) {
-	reader := bufio.NewScanner(in)
+func (w *wordle) displayRow(word string, colors [wordLength]tileColor) {
+	for i, c := range word {
+		switch colors[i] {
+		case green:
+			w.write("\033[42m\033[1;30m")
+		case yellow:
+			w.write("\033[43m\033[1;30m")
+		case gray:
+			w.write("\033[40m\033[1;37m")
+		}
 
-	write(fmt.Sprintf("Version: \t%s\n", version), out)
-	write("Info: \t\thttps://github.com/mdb/wordle\n", out)
-	write("About: \t\tA CLI adaptation of Josh Wardle's Wordle (https://powerlanguage.co.uk/wordle/)\n\n", out)
-	write(usage, out)
+		w.write(fmt.Sprintf(" %c ", c))
+		w.write("\033[m\033[m")
+	}
+
+	w.write("\n")
+}
+
+func (w *wordle) displayGrid(guess string, guessCount int) {
+	tileColors := w.getLetterTileColors(guess)
+	w.guesses = append(w.guesses, map[string][wordLength]tileColor{guess: tileColors})
+
+	for _, guess := range w.guesses {
+		for g, colors := range guess {
+			w.displayRow(g, colors)
+		}
+	}
+
+	w.displayEmptyRows(guessCount)
+}
+
+func (w *wordle) getLetterTileColors(guess string) [wordLength]tileColor {
+	colors := [wordLength]tileColor{}
+
+	for i := range colors {
+		colors[i] = gray
+	}
+
+	for j, guessLetter := range guess {
+		for k, letter := range w.word {
+			if guessLetter == letter {
+				if j == k {
+					colors[j] = green
+					break
+				}
+
+				colors[j] = yellow
+			}
+		}
+	}
+
+	return colors
+}
+
+func (w *wordle) displayEmptyRows(guessCount int) {
+	emptyGuessChars := []string{}
+	for i := 0; i < w.wordLength; i++ {
+		emptyGuessChars = append(emptyGuessChars, "*")
+	}
+
+	emptyGuess := strings.Join(emptyGuessChars, "")
+	emptyTileColors := w.getLetterTileColors(emptyGuess)
+	emptyRowCount := w.maxGuesses - guessCount - 1
+
+	for i := 0; i < emptyRowCount; i++ {
+		w.displayRow(emptyGuess, emptyTileColors)
+	}
+}
+
+func (w *wordle) write(str string) {
+	w.out.Write([]byte(str))
+}
+
+func (w *wordle) run() {
+	reader := bufio.NewScanner(w.in)
+
+	w.write(fmt.Sprintf("Version: \t%s\n", version))
+	w.write("Info: \t\thttps://github.com/mdb/wordle\n")
+	w.write("About: \t\tA CLI adaptation of Josh Wardle's Wordle (https://powerlanguage.co.uk/wordle/)\n\n")
+	w.write(fmt.Sprintf("Guess a %v-letter word within %v guesses...\n", w.wordLength, w.maxGuesses))
 
 	for guessCount := 0; guessCount < maxGuesses; guessCount++ {
 		reader.Scan()
@@ -58,29 +129,35 @@ func run(word string, in io.Reader, out io.Writer) {
 			break
 		}
 
-		if len(guess) != len(word) {
-			write(fmt.Sprintf("%s is not a %v-letter word. Try again...\n", guess, wordLength), out)
+		if len(guess) != len(w.word) {
+			w.write(fmt.Sprintf("%s is not a %v-letter word. Try again...\n", guess, wordLength))
 			guessCount--
 		}
 
-		if len(guess) == len(word) {
-			displayWordleGrid(guess, word, out, guessCount)
+		if len(guess) == len(w.word) {
+			w.displayGrid(guess, guessCount)
 		}
 
-		if guess == word {
+		if guess == w.word {
 			break
 		}
 
 		if guessCount == maxGuesses-1 {
 			fmt.Println()
-			displayWordleRow(word, getLetterTileColors(word, word), out)
+			w.displayRow(w.word, w.getLetterTileColors(w.word))
 			os.Exit(1)
 		}
 	}
 }
 
-func write(str string, out io.Writer) {
-	out.Write([]byte(str))
+func newWordle(word string, in io.Reader, out io.Writer) *wordle {
+	return &wordle{
+		wordLength: wordLength,
+		maxGuesses: maxGuesses,
+		word:       word,
+		in:         in,
+		out:        out,
+	}
 }
 
 func getWord() string {
@@ -108,71 +185,11 @@ func getWord() string {
 	return candidates[rand.Intn(len(candidates))]
 }
 
-func getLetterTileColors(guess string, word string) [wordLength]tileColor {
-	colors := [wordLength]tileColor{}
+func main() {
+	word := getWord()
+	f := os.Stdin
+	defer f.Close()
 
-	for i := range colors {
-		colors[i] = gray
-	}
-
-	for j, guessLetter := range guess {
-		for k, letter := range word {
-			if guessLetter == letter {
-				if j == k {
-					colors[j] = green
-					break
-				}
-
-				colors[j] = yellow
-			}
-		}
-	}
-
-	return colors
-}
-
-func displayWordleGrid(guess string, word string, out io.Writer, guessCount int) {
-	tileColors := getLetterTileColors(guess, word)
-	guesses = append(guesses, map[string][wordLength]tileColor{guess: tileColors})
-
-	for _, guess := range guesses {
-		for g, colors := range guess {
-			displayWordleRow(g, colors, out)
-		}
-	}
-
-	displayEmptyWordleRows(word, out, guessCount)
-}
-
-func displayWordleRow(word string, colors [wordLength]tileColor, out io.Writer) {
-	for i, c := range word {
-		switch colors[i] {
-		case green:
-			write("\033[42m\033[1;30m", out)
-		case yellow:
-			write("\033[43m\033[1;30m", out)
-		case gray:
-			write("\033[40m\033[1;37m", out)
-		}
-
-		write(fmt.Sprintf(" %c ", c), out)
-		write("\033[m\033[m", out)
-	}
-
-	write("\n", out)
-}
-
-func displayEmptyWordleRows(word string, out io.Writer, guessCount int) {
-	emptyGuessChars := []string{}
-	for i := 0; i < wordLength; i++ {
-		emptyGuessChars = append(emptyGuessChars, "*")
-	}
-
-	emptyGuess := strings.Join(emptyGuessChars, "")
-	emptyTileColors := getLetterTileColors(emptyGuess, word)
-	emptyRowCount := maxGuesses - guessCount - 1
-
-	for i := 0; i < emptyRowCount; i++ {
-		displayWordleRow(emptyGuess, emptyTileColors, out)
-	}
+	w := newWordle(word, os.Stdin, f)
+	w.run()
 }
