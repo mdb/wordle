@@ -2,9 +2,7 @@
 
 # wordle
 
-A Go-based `wordle` CLI.
-
-[Josh Wardle](https://github.com/powerlanguage) deserves credit for creating [Wordle](https://www.powerlanguage.co.uk/wordle/); this is just a command line interface implementation of his creation.
+A Go-based CLI implementation of [Josh Wardle](https://powerlanguage.co.uk)'s [Wordle](https://powerlanguage.co.uk/wordle/).
 
 <img src="wordle.png" />
 
