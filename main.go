@@ -45,7 +45,9 @@ func main() {
 func run(word string, in io.Reader, out io.Writer) {
 	reader := bufio.NewScanner(in)
 
-	write(fmt.Sprintf("https://github.com/mdb/wordle version %s\n\n", version), out)
+	write(fmt.Sprintf("Version: \t%s\n", version), out)
+	write("Info: \t\thttps://github.com/mdb/wordle\n", out)
+	write("About: \t\tA CLI adaptation of Josh Wardle's Wordle (https://powerlanguage.co.uk/wordle/)\n\n", out)
 	write(usage, out)
 
 	for guessCount := 0; guessCount < maxGuesses; guessCount++ {

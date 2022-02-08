@@ -15,7 +15,15 @@ func TestRun(t *testing.T) {
 	}{{
 		word:   "SEAKS",
 		inputs: []string{"seaks"},
-		output: "https://github.com/mdb/wordle version",
+		output: "Version:",
+	}, {
+		word:   "SEAKS",
+		inputs: []string{"seaks"},
+		output: "https://github.com/mdb/wordle",
+	}, {
+		word:   "SEAKS",
+		inputs: []string{"seaks"},
+		output: "A CLI adaptation of Josh Wardle's Wordle",
 	}, {
 		word:   "SEAKS",
 		inputs: []string{"seaks"},
