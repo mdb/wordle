@@ -8,7 +8,19 @@ A Go-based CLI implementation of [Josh Wardle](https://powerlanguage.co.uk)'s [W
 
 ## Installation
 
+### Mac OS
+
+Mac OS [homebrew](https://brew.sh/) users:
+
+```
+brew install wordle
+```
+
+### Linux, Windows, and Mac OS users not using `homebrew`
+
 Download the [latest release](https://github.com/mdb/wordle/releases) for your platform.
+
+### Compile from source
 
 Alternatively, you can compile from source:
 
