@@ -3,24 +3,24 @@ name: CI/CD
 on:
   pull_request:
     paths-ignore:
-    - '**/README.md'
+      - '**/README.md'
   push:
     branches:
-    - main
+      - main
     paths-ignore:
-    - '**/README.md'
+      - '**/README.md'
 
 jobs:
   build-snapshot:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
-    - name: Set up Go
-      uses: actions/setup-go@v2
-      with:
-        go-version: 1.17
-    - name: Build
-      run: make
+      - uses: actions/checkout@v2
+      - name: Set up Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: 1.17
+      - name: Build
+        run: make
 
   build-and-publish-release:
     if: github.ref == 'refs/heads/main'
