@@ -15,6 +15,7 @@ A Go-based CLI implementation of [Josh Wardle](https://powerlanguage.co.uk)'s [W
 Mac OS [homebrew](https://brew.sh/) users:
 
 ```
+brew tap mdb/homebrew-repo
 brew install wordle
 ```
 
@@ -55,4 +56,6 @@ make
 
 * Could https://github.com/rivo/tview enable some UI improvements? Or is that overkill?
 * Would it be cool to provide an option to output the final grid as an image, such that it could be shared?
+* Would it be cool to provide an option to output stats?
+* Would it be cool to restrict game play to once/day?
 * Would it be cool to restrict game play to once/day?

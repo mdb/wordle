@@ -1,6 +1,14 @@
 name: CI/CD
 
-on: [push, pull_request]
+on:
+  pull_request:
+    paths-ignore:
+    - '**/README.md'
+  push:
+    branches:
+    - main
+    paths-ignore:
+    - '**/README.md'
 
 jobs:
   build-snapshot:
