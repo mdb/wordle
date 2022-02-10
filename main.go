@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"embed"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -29,6 +30,10 @@ const (
 var (
 	// passed in at build time
 	version string
+
+	// Embed the words directory in the compiled binary.
+	//go:embed words
+	words embed.FS
 )
 
 type wordle struct {
@@ -158,7 +163,20 @@ func newWordle(word string, in io.Reader, out io.Writer) *wordle {
 	}
 }
 
-func getWord() string {
+func getWordFromFile() string {
+	data, err := words.ReadFile("words/words.txt")
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	today := time.Now().UTC()
+	startDay := time.Date(2021, time.Month(6), 19, 0, 0, 0, 0, time.UTC)
+	daysSinceStart := int(today.Sub(startDay).Hours() / 24)
+
+	return strings.ToUpper(strings.Split(string(data), ",")[daysSinceStart])
+}
+
+func getWordFromURL() string {
 	// NOTE: this list inludes many uncommon and seemingly not-English words. Is there a better data source?
 	res, err := http.Get("https://raw.githubusercontent.com/dwyl/english-words/master/words_alpha.txt")
 	if err != nil {
@@ -184,7 +202,7 @@ func getWord() string {
 }
 
 func main() {
-	word := getWord()
+	word := getWordFromFile()
 	f := os.Stdin
 	defer f.Close()
 
