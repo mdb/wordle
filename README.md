@@ -62,3 +62,4 @@ make
 * Should there be a `-practice` flag to support `-practice` mode? If so, should it use old solutions or perhaps https://raw.githubusercontent.com/dwyl/english-words/master/words_alpha.txt ?
 * Should there be a `-hard` flag to support a hard mode?
 * Could `wordle` support configurable backends -- like `git` -- for persisting stats and current state?
+* Should `wordle` display a "Not in word list" message, similar to real Wordle?
