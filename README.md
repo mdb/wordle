@@ -59,4 +59,6 @@ make
 * Would it be cool to provide an option to output the final grid as an image, such that it could be shared?
 * Would it be cool to provide an option to output stats?
 * Would it be cool to restrict game play to once/day?
-* Would it be cool to restrict game play to once/day?
+* Should there be a `-practice` flag to support `-practice` mode? If so, should it use old solutions or perhaps https://raw.githubusercontent.com/dwyl/english-words/master/words_alpha.txt ?
+* Should there be a `-hard` flag to support a hard mode?
+* Could `wordle` support configurable backends -- like `git` -- for persisting stats and current state?
