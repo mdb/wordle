@@ -77,7 +77,7 @@ type gameState struct {
 }
 
 type wordle struct {
-	word    string
+	state   *gameState
 	guesses []map[string][wordLength]tileColor
 	in      io.Reader
 	out     io.Writer
@@ -122,7 +122,7 @@ func (w *wordle) getLetterTileColors(guess string) [wordLength]tileColor {
 	}
 
 	for j, guessLetter := range guess {
-		for k, letter := range w.word {
+		for k, letter := range w.state.solution {
 			if guessLetter == letter {
 				if j == k {
 					colors[j] = green
@@ -158,6 +158,7 @@ func (w *wordle) write(str string) {
 
 func (w *wordle) run() {
 	reader := bufio.NewScanner(w.in)
+	solution := w.state.solution
 
 	w.write(fmt.Sprintf("Version: \t%s\n", version))
 	w.write("Info: \t\thttps://github.com/mdb/wordle\n")
@@ -174,22 +175,22 @@ func (w *wordle) run() {
 			break
 		}
 
-		if len(guess) != len(w.word) {
+		if len(guess) != len(solution) {
 			w.write(fmt.Sprintf("%s is not a %v-letter word. Try again...\n", guess, wordLength))
 			guessCount--
 		}
 
-		if len(guess) == len(w.word) {
+		if len(guess) == len(solution) {
 			w.displayGrid(guess, guessCount)
 		}
 
-		if guess == w.word {
+		if guess == solution {
 			break
 		}
 
 		if guessCount == maxGuesses-1 {
 			fmt.Println()
-			w.displayRow(w.word, w.getLetterTileColors(w.word))
+			w.displayRow(solution, w.getLetterTileColors(solution))
 			os.Exit(1)
 		}
 	}
@@ -197,9 +198,11 @@ func (w *wordle) run() {
 
 func newWordle(word string, in io.Reader, out io.Writer) *wordle {
 	return &wordle{
-		word: word,
-		in:   in,
-		out:  out,
+		in:  in,
+		out: out,
+		state: &gameState{
+			solution: word,
+		},
 	}
 }
 
