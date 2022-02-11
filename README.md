@@ -55,6 +55,7 @@ make
 ## Improvement ideas
 
 * Could https://github.com/rivo/tview enable some UI improvements? Or is that overkill?
+* Is there a way to output a keyboard visualization with color-coded letters after each guess, similar to https://powerlanguage.co.uk/wordle/?
 * Would it be cool to provide an option to output the final grid as an image, such that it could be shared?
 * Would it be cool to provide an option to output stats?
 * Would it be cool to restrict game play to once/day?
