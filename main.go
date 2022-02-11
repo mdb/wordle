@@ -175,14 +175,13 @@ func (w *wordle) run() {
 			break
 		}
 
-		w.state.boardState = append(w.state.boardState, guess)
-
 		if len(guess) != len(solution) {
 			w.write(fmt.Sprintf("%s is not a %v-letter word. Try again...\n", guess, wordLength))
 			w.state.rowIndex--
 		}
 
 		if len(guess) == len(solution) {
+			w.state.boardState = append(w.state.boardState, guess)
 			w.displayGrid(guess, w.state.rowIndex)
 		}
 
