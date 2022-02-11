@@ -36,6 +36,46 @@ var (
 	words embed.FS
 )
 
+// example: {"currentStreak":1,"maxStreak":1,"guesses":{"1":1,"2":0,"3":0,"4":0,"5":0,"6":0,"fail":0},"winPercentage":100,"gamesPlayed":1,"gamesWon":1,"averageGuesses":1}
+type statistics struct {
+	currentStreak  int
+	maxStreak      int
+	guesses        map[string]int
+	winsPercentage int
+	gamesPlayed    int
+	gamesWon       int
+	averageGuesses int
+}
+
+// example: {"boardState":["beach","under","","","",""],"evaluations":[["absent","present","absent","present","absent"],["correct","absent","absent","correct","correct"],null,null,null,null],"rowIndex":2,"solution":"ulcer","gameStatus":"IN_PROGRESS","lastPlayedTs":1644580347374,"lastCompletedTs":null,"restoringFromLocalStorage":null,"hardMode":false}
+type gameState struct {
+	// a slice of guesses
+	// example: []string{"beach", "", "", "", "", ""}
+	boardState []string
+
+	// a slice of slices, representing each guess's evaluated chars
+	// example: []string{[]string{"correct", "present", "absent", "absent", "absent"}, []string{}, []string{}, []string{}, []string{}, []string{}}
+	evaluations [][]string
+
+	// the current row
+	rowIndex int
+
+	// the solution word
+	solution string
+
+	// example: IN_PROGRESS
+	// TODO: what are the other possible values?
+	gameStatus string
+
+	// example: 1644580347374
+	lastPlayedTS time.Time
+
+	// example: 1644580347374
+	lastCompletedTS time.Time
+
+	hardMode bool
+}
+
 type wordle struct {
 	word    string
 	guesses []map[string][wordLength]tileColor
