@@ -47,10 +47,10 @@ type statistics struct {
 	averageGuesses int
 }
 
-// example: {"boardState":["beach","under","","","",""],"evaluations":[["absent","present","absent","present","absent"],["correct","absent","absent","correct","correct"],null,null,null,null],"rowIndex":2,"solution":"ulcer","gameStatus":"IN_PROGRESS","lastPlayedTs":1644580347374,"lastCompletedTs":null,"restoringFromLocalStorage":null,"hardMode":false}
+// example: {"boardState":["BEACH","UNDER","","","",""],"evaluations":[["absent","present","absent","present","absent"],["correct","absent","absent","correct","correct"],null,null,null,null],"rowIndex":2,"solution":"ulcer","gameStatus":"IN_PROGRESS","lastPlayedTs":1644580347374,"lastCompletedTs":null,"restoringFromLocalStorage":null,"hardMode":false}
 type gameState struct {
 	// a slice of guesses
-	// example: []string{"beach", "", "", "", "", ""}
+	// example: []string{"BEACH", "", "", "", "", ""}
 	boardState []string
 
 	// a slice of slices, representing each guess's evaluated chars
@@ -165,7 +165,7 @@ func (w *wordle) run() {
 	w.write("About: \t\tA CLI adaptation of Josh Wardle's Wordle (https://powerlanguage.co.uk/wordle/)\n\n")
 	w.write(fmt.Sprintf("Guess a %v-letter word within %v guesses...\n", wordLength, maxGuesses))
 
-	for guessCount := 0; guessCount < maxGuesses; guessCount++ {
+	for w.state.rowIndex = 0; w.state.rowIndex < maxGuesses; w.state.rowIndex++ {
 		w.write(fmt.Sprintf("\nGuess (%v/%v): ", len(w.guesses)+1, maxGuesses))
 
 		reader.Scan()
@@ -175,20 +175,22 @@ func (w *wordle) run() {
 			break
 		}
 
+		w.state.boardState = append(w.state.boardState, guess)
+
 		if len(guess) != len(solution) {
 			w.write(fmt.Sprintf("%s is not a %v-letter word. Try again...\n", guess, wordLength))
-			guessCount--
+			w.state.rowIndex--
 		}
 
 		if len(guess) == len(solution) {
-			w.displayGrid(guess, guessCount)
+			w.displayGrid(guess, w.state.rowIndex)
 		}
 
 		if guess == solution {
 			break
 		}
 
-		if guessCount == maxGuesses-1 {
+		if w.state.rowIndex == maxGuesses-1 {
 			fmt.Println()
 			w.displayRow(solution, w.getLetterTileColors(solution))
 			os.Exit(1)
