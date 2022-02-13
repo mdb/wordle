@@ -19,14 +19,6 @@ const (
 	wordLength int = 5
 )
 
-type tileColor int
-
-const (
-	gray tileColor = iota
-	yellow
-	green
-)
-
 type evaluation int
 
 const (
@@ -84,10 +76,9 @@ type gameState struct {
 }
 
 type wordle struct {
-	state   *gameState
-	guesses []map[string][wordLength]tileColor
-	in      io.Reader
-	out     io.Writer
+	state *gameState
+	in    io.Reader
+	out   io.Writer
 }
 
 func (w *wordle) displaySolution() {
@@ -131,29 +122,6 @@ func (w *wordle) displayGrayTile(char rune) {
 	w.write("\033[40m\033[1;37m")
 	w.write(fmt.Sprintf(" %c ", char))
 	w.write("\033[m\033[m")
-}
-
-func (w *wordle) getLetterTileColors(guess string) [wordLength]tileColor {
-	colors := [wordLength]tileColor{}
-
-	for i := range colors {
-		colors[i] = gray
-	}
-
-	for j, guessLetter := range guess {
-		for k, letter := range w.state.solution {
-			if guessLetter == letter {
-				if j == k {
-					colors[j] = green
-					break
-				}
-
-				colors[j] = yellow
-			}
-		}
-	}
-
-	return colors
 }
 
 func (w *wordle) evaluateGuess(guess string) [wordLength]evaluation {
