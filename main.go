@@ -55,7 +55,7 @@ type gameState struct {
 
 	// a slice of slices, representing each guess's evaluated chars
 	// example: []string{[]string{"correct", "present", "absent", "absent", "absent"}, []string{}, []string{}, []string{}, []string{}, []string{}}
-	evaluations [][]string
+	evaluations [maxGuesses][wordLength]string
 
 	// the current row
 	rowIndex int
@@ -152,6 +152,29 @@ func (w *wordle) displayEmptyRows(guessCount int) {
 	}
 }
 
+func (w *wordle) evaluateGuess(guess string) [wordLength]string {
+	evaluation := [wordLength]string{}
+
+	for i := 0; i < wordLength; i++ {
+		evaluation[i] = "absent"
+	}
+
+	for j, guessLetter := range guess {
+		for k, letter := range w.state.solution {
+			if guessLetter == letter {
+				if j == k {
+					evaluation[j] = "correct"
+					break
+				}
+
+				evaluation[j] = "present"
+			}
+		}
+	}
+
+	return evaluation
+}
+
 func (w *wordle) write(str string) {
 	w.out.Write([]byte(str))
 }
@@ -182,6 +205,7 @@ func (w *wordle) run() {
 
 		if len(guess) == len(solution) {
 			w.state.boardState = append(w.state.boardState, guess)
+			w.state.evaluations[w.state.rowIndex] = w.evaluateGuess(guess)
 			w.displayGrid(guess, w.state.rowIndex)
 		}
 
