@@ -27,6 +27,14 @@ const (
 	green
 )
 
+type evaluation int
+
+const (
+	absent evaluation = iota
+	present
+	correct
+)
+
 var (
 	// passed in at build time
 	version string
@@ -54,8 +62,7 @@ type gameState struct {
 	boardState [maxGuesses]string
 
 	// a slice of slices, representing each guess's evaluated chars
-	// example: []string{[]string{"correct", "present", "absent", "absent", "absent"}, []string{}, []string{}, []string{}, []string{}, []string{}}
-	evaluations [maxGuesses][wordLength]string
+	evaluations [maxGuesses][wordLength]evaluation
 
 	// the current row
 	rowIndex int
@@ -63,7 +70,7 @@ type gameState struct {
 	// the solution word
 	solution string
 
-	// example: IN_PROGRESS
+	// example: IN_PROGRESS, FAIL
 	// TODO: what are the other possible values?
 	gameStatus string
 
@@ -83,19 +90,9 @@ type wordle struct {
 	out     io.Writer
 }
 
-func (w *wordle) displayRow(word string, colors [wordLength]tileColor) {
-	for i, c := range word {
-		switch colors[i] {
-		case green:
-			w.write("\033[42m\033[1;30m")
-		case yellow:
-			w.write("\033[43m\033[1;30m")
-		case gray:
-			w.write("\033[40m\033[1;37m")
-		}
-
-		w.write(fmt.Sprintf(" %c ", c))
-		w.write("\033[m\033[m")
+func (w *wordle) displaySolution() {
+	for _, char := range w.state.solution {
+		w.displayGreenTile(char)
 	}
 
 	w.write("\n")
@@ -105,20 +102,35 @@ func (w *wordle) displayGrid() {
 	for i, guess := range w.state.boardState {
 		for j, guessLetter := range guess {
 			switch w.state.evaluations[i][j] {
-			case "correct":
-				w.write("\033[42m\033[1;30m")
-			case "present":
-				w.write("\033[43m\033[1;30m")
-			case "absent":
-				w.write("\033[40m\033[1;37m")
+			case correct:
+				w.displayGreenTile(guessLetter)
+			case present:
+				w.displayYellowTile(guessLetter)
+			case absent:
+				w.displayGrayTile(guessLetter)
 			}
-
-			w.write(fmt.Sprintf(" %c ", guessLetter))
-			w.write("\033[m\033[m")
 		}
 
 		w.write("\n")
 	}
+}
+
+func (w *wordle) displayGreenTile(char rune) {
+	w.write("\033[42m\033[1;30m")
+	w.write(fmt.Sprintf(" %c ", char))
+	w.write("\033[m\033[m")
+}
+
+func (w *wordle) displayYellowTile(char rune) {
+	w.write("\033[43m\033[1;30m")
+	w.write(fmt.Sprintf(" %c ", char))
+	w.write("\033[m\033[m")
+}
+
+func (w *wordle) displayGrayTile(char rune) {
+	w.write("\033[40m\033[1;37m")
+	w.write(fmt.Sprintf(" %c ", char))
+	w.write("\033[m\033[m")
 }
 
 func (w *wordle) getLetterTileColors(guess string) [wordLength]tileColor {
@@ -144,37 +156,22 @@ func (w *wordle) getLetterTileColors(guess string) [wordLength]tileColor {
 	return colors
 }
 
-func (w *wordle) displayEmptyRows(guessCount int) {
-	emptyGuessChars := []string{}
-	for i := 0; i < wordLength; i++ {
-		emptyGuessChars = append(emptyGuessChars, "*")
-	}
-
-	emptyGuess := strings.Join(emptyGuessChars, "")
-	emptyTileColors := w.getLetterTileColors(emptyGuess)
-	emptyRowCount := maxGuesses - guessCount - 1
-
-	for i := 0; i < emptyRowCount; i++ {
-		w.displayRow(emptyGuess, emptyTileColors)
-	}
-}
-
-func (w *wordle) evaluateGuess(guess string) [wordLength]string {
-	evaluation := [wordLength]string{}
+func (w *wordle) evaluateGuess(guess string) [wordLength]evaluation {
+	evaluation := [wordLength]evaluation{}
 
 	for i := 0; i < wordLength; i++ {
-		evaluation[i] = "absent"
+		evaluation[i] = absent
 	}
 
 	for j, guessLetter := range guess {
 		for k, letter := range w.state.solution {
 			if guessLetter == letter {
 				if j == k {
-					evaluation[j] = "correct"
+					evaluation[j] = correct
 					break
 				}
 
-				evaluation[j] = "present"
+				evaluation[j] = present
 			}
 		}
 	}
@@ -196,7 +193,7 @@ func (w *wordle) run() {
 	w.write(fmt.Sprintf("Guess a %v-letter word within %v guesses...\n", wordLength, maxGuesses))
 
 	for w.state.rowIndex = 0; w.state.rowIndex < maxGuesses; w.state.rowIndex++ {
-		w.write(fmt.Sprintf("\nGuess (%v/%v): ", len(w.guesses)+1, maxGuesses))
+		w.write(fmt.Sprintf("\nGuess (%v/%v): ", w.state.rowIndex+1, maxGuesses))
 
 		reader.Scan()
 		guess := strings.ToUpper(reader.Text())
@@ -222,7 +219,7 @@ func (w *wordle) run() {
 
 		if w.state.rowIndex == maxGuesses-1 {
 			fmt.Println()
-			w.displayRow(solution, w.getLetterTileColors(solution))
+			w.displaySolution()
 			os.Exit(1)
 		}
 	}
@@ -238,12 +235,12 @@ func newWordle(word string, in io.Reader, out io.Writer) *wordle {
 	}
 	emptyGuessChar := "*"
 	emptyGuess := ""
-	emptyGuessEvaluation := [wordLength]string{}
+	emptyGuessEvaluation := [wordLength]evaluation{}
 
 	for i := 0; i < wordLength; i++ {
 		emptyGuess = emptyGuess + emptyGuessChar
 		fmt.Println(emptyGuess)
-		emptyGuessEvaluation[i] = "absent"
+		emptyGuessEvaluation[i] = absent
 	}
 
 	for i := 0; i < maxGuesses; i++ {
