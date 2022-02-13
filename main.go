@@ -15,8 +15,9 @@ import (
 )
 
 const (
-	maxGuesses int = 6
-	wordLength int = 5
+	maxGuesses     int    = 6
+	wordLength     int    = 5
+	emptyGuessChar string = "*"
 )
 
 type evaluation int
@@ -47,11 +48,13 @@ type statistics struct {
 	averageGuesses int
 }
 
-// example: {"boardState":["BEACH","UNDER","","","",""],"evaluations":[["absent","present","absent","present","absent"],["correct","absent","absent","correct","correct"],null,null,null,null],"rowIndex":2,"solution":"ulcer","gameStatus":"IN_PROGRESS","lastPlayedTs":1644580347374,"lastCompletedTs":null,"restoringFromLocalStorage":null,"hardMode":false}
-type gameState struct {
+type wordle struct {
+	in  io.Reader
+	out io.Writer
+
 	// a slice of guesses
 	// example: []string{"BEACH", "", "", "", "", ""}
-	boardState [maxGuesses]string
+	guesses [maxGuesses]string
 
 	// a slice of slices, representing each guess's evaluated chars
 	evaluations [maxGuesses][wordLength]evaluation
@@ -75,14 +78,8 @@ type gameState struct {
 	hardMode bool
 }
 
-type wordle struct {
-	state *gameState
-	in    io.Reader
-	out   io.Writer
-}
-
 func (w *wordle) displaySolution() {
-	for _, char := range w.state.solution {
+	for _, char := range w.solution {
 		w.displayGreenTile(char)
 	}
 
@@ -90,9 +87,9 @@ func (w *wordle) displaySolution() {
 }
 
 func (w *wordle) displayGrid() {
-	for i, guess := range w.state.boardState {
+	for i, guess := range w.guesses {
 		for j, guessLetter := range guess {
-			switch w.state.evaluations[i][j] {
+			switch w.evaluations[i][j] {
 			case correct:
 				w.displayGreenTile(guessLetter)
 			case present:
@@ -108,18 +105,20 @@ func (w *wordle) displayGrid() {
 
 func (w *wordle) displayGreenTile(char rune) {
 	w.write("\033[42m\033[1;30m")
-	w.write(fmt.Sprintf(" %c ", char))
-	w.write("\033[m\033[m")
+	w.displayOnTile(char)
 }
 
 func (w *wordle) displayYellowTile(char rune) {
 	w.write("\033[43m\033[1;30m")
-	w.write(fmt.Sprintf(" %c ", char))
-	w.write("\033[m\033[m")
+	w.displayOnTile(char)
 }
 
 func (w *wordle) displayGrayTile(char rune) {
 	w.write("\033[40m\033[1;37m")
+	w.displayOnTile(char)
+}
+
+func (w *wordle) displayOnTile(char rune) {
 	w.write(fmt.Sprintf(" %c ", char))
 	w.write("\033[m\033[m")
 }
@@ -132,7 +131,7 @@ func (w *wordle) evaluateGuess(guess string) [wordLength]evaluation {
 	}
 
 	for j, guessLetter := range guess {
-		for k, letter := range w.state.solution {
+		for k, letter := range w.solution {
 			if guessLetter == letter {
 				if j == k {
 					evaluation[j] = correct
@@ -153,15 +152,15 @@ func (w *wordle) write(str string) {
 
 func (w *wordle) run() {
 	reader := bufio.NewScanner(w.in)
-	solution := w.state.solution
+	solution := w.solution
 
 	w.write(fmt.Sprintf("Version: \t%s\n", version))
 	w.write("Info: \t\thttps://github.com/mdb/wordle\n")
 	w.write("About: \t\tA CLI adaptation of Josh Wardle's Wordle (https://powerlanguage.co.uk/wordle/)\n\n")
 	w.write(fmt.Sprintf("Guess a %v-letter word within %v guesses...\n", wordLength, maxGuesses))
 
-	for w.state.rowIndex = 0; w.state.rowIndex < maxGuesses; w.state.rowIndex++ {
-		w.write(fmt.Sprintf("\nGuess (%v/%v): ", w.state.rowIndex+1, maxGuesses))
+	for w.rowIndex = 0; w.rowIndex < maxGuesses; w.rowIndex++ {
+		w.write(fmt.Sprintf("\nGuess (%v/%v): ", w.rowIndex+1, maxGuesses))
 
 		reader.Scan()
 		guess := strings.ToUpper(reader.Text())
@@ -172,12 +171,12 @@ func (w *wordle) run() {
 
 		if len(guess) != len(solution) {
 			w.write(fmt.Sprintf("%s is not a %v-letter word. Try again...\n", guess, wordLength))
-			w.state.rowIndex--
+			w.rowIndex--
 		}
 
 		if len(guess) == len(solution) {
-			w.state.boardState[w.state.rowIndex] = guess
-			w.state.evaluations[w.state.rowIndex] = w.evaluateGuess(guess)
+			w.guesses[w.rowIndex] = guess
+			w.evaluations[w.rowIndex] = w.evaluateGuess(guess)
 			w.displayGrid()
 		}
 
@@ -185,7 +184,7 @@ func (w *wordle) run() {
 			break
 		}
 
-		if w.state.rowIndex == maxGuesses-1 {
+		if w.rowIndex == maxGuesses-1 {
 			fmt.Println()
 			w.displaySolution()
 			os.Exit(1)
@@ -195,25 +194,23 @@ func (w *wordle) run() {
 
 func newWordle(word string, in io.Reader, out io.Writer) *wordle {
 	w := &wordle{
-		in:  in,
-		out: out,
-		state: &gameState{
-			solution: word,
-		},
+		in:       in,
+		out:      out,
+		solution: word,
 	}
-	emptyGuessChar := "*"
 	emptyGuess := ""
 	emptyGuessEvaluation := [wordLength]evaluation{}
 
 	for i := 0; i < wordLength; i++ {
 		emptyGuess = emptyGuess + emptyGuessChar
-		fmt.Println(emptyGuess)
 		emptyGuessEvaluation[i] = absent
 	}
 
+	// By seeding w with dummy guesses and dummy evaluations,
+	// displayGrid displays remaining rows with each grid rendering.
 	for i := 0; i < maxGuesses; i++ {
-		w.state.evaluations[i] = emptyGuessEvaluation
-		w.state.boardState[i] = emptyGuess
+		w.evaluations[i] = emptyGuessEvaluation
+		w.guesses[i] = emptyGuess
 	}
 
 	return w

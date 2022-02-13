@@ -111,9 +111,7 @@ func Test_evaluateGuess(t *testing.T) {
 	for _, test := range tests {
 		t.Run(fmt.Sprintf("the word is '%s' and the guess ie '%s'", test.word, test.guess), func(t *testing.T) {
 			w := &wordle{
-				state: &gameState{
-					solution: test.word,
-				},
+				solution: test.word,
 			}
 
 			evaluations := w.evaluateGuess(test.guess)
