@@ -51,7 +51,7 @@ type statistics struct {
 type gameState struct {
 	// a slice of guesses
 	// example: []string{"BEACH", "", "", "", "", ""}
-	boardState []string
+	boardState [maxGuesses]string
 
 	// a slice of slices, representing each guess's evaluated chars
 	// example: []string{[]string{"correct", "present", "absent", "absent", "absent"}, []string{}, []string{}, []string{}, []string{}, []string{}}
@@ -101,17 +101,24 @@ func (w *wordle) displayRow(word string, colors [wordLength]tileColor) {
 	w.write("\n")
 }
 
-func (w *wordle) displayGrid(guess string, guessCount int) {
-	tileColors := w.getLetterTileColors(guess)
-	w.guesses = append(w.guesses, map[string][wordLength]tileColor{guess: tileColors})
+func (w *wordle) displayGrid() {
+	for i, guess := range w.state.boardState {
+		for j, guessLetter := range guess {
+			switch w.state.evaluations[i][j] {
+			case "correct":
+				w.write("\033[42m\033[1;30m")
+			case "present":
+				w.write("\033[43m\033[1;30m")
+			case "absent":
+				w.write("\033[40m\033[1;37m")
+			}
 
-	for _, guess := range w.guesses {
-		for g, colors := range guess {
-			w.displayRow(g, colors)
+			w.write(fmt.Sprintf(" %c ", guessLetter))
+			w.write("\033[m\033[m")
 		}
-	}
 
-	w.displayEmptyRows(guessCount)
+		w.write("\n")
+	}
 }
 
 func (w *wordle) getLetterTileColors(guess string) [wordLength]tileColor {
@@ -204,9 +211,9 @@ func (w *wordle) run() {
 		}
 
 		if len(guess) == len(solution) {
-			w.state.boardState = append(w.state.boardState, guess)
+			w.state.boardState[w.state.rowIndex] = guess
 			w.state.evaluations[w.state.rowIndex] = w.evaluateGuess(guess)
-			w.displayGrid(guess, w.state.rowIndex)
+			w.displayGrid()
 		}
 
 		if guess == solution {
@@ -222,13 +229,29 @@ func (w *wordle) run() {
 }
 
 func newWordle(word string, in io.Reader, out io.Writer) *wordle {
-	return &wordle{
+	w := &wordle{
 		in:  in,
 		out: out,
 		state: &gameState{
 			solution: word,
 		},
 	}
+	emptyGuessChar := "*"
+	emptyGuess := ""
+	emptyGuessEvaluation := [wordLength]string{}
+
+	for i := 0; i < wordLength; i++ {
+		emptyGuess = emptyGuess + emptyGuessChar
+		fmt.Println(emptyGuess)
+		emptyGuessEvaluation[i] = "absent"
+	}
+
+	for i := 0; i < maxGuesses; i++ {
+		w.state.evaluations[i] = emptyGuessEvaluation
+		w.state.boardState[i] = emptyGuess
+	}
+
+	return w
 }
 
 func getWordFromFile() string {
