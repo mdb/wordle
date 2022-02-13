@@ -59,8 +59,8 @@ type wordle struct {
 	// a slice of slices, representing each guess's evaluated chars
 	evaluations [maxGuesses][wordLength]evaluation
 
-	// the current row
-	rowIndex int
+	// the current guess index
+	guessIndex int
 
 	// the solution word
 	solution string
@@ -159,8 +159,8 @@ func (w *wordle) run() {
 	w.write("About: \t\tA CLI adaptation of Josh Wardle's Wordle (https://powerlanguage.co.uk/wordle/)\n\n")
 	w.write(fmt.Sprintf("Guess a %v-letter word within %v guesses...\n", wordLength, maxGuesses))
 
-	for w.rowIndex = 0; w.rowIndex < maxGuesses; w.rowIndex++ {
-		w.write(fmt.Sprintf("\nGuess (%v/%v): ", w.rowIndex+1, maxGuesses))
+	for w.guessIndex = 0; w.guessIndex < maxGuesses; w.guessIndex++ {
+		w.write(fmt.Sprintf("\nGuess (%v/%v): ", w.guessIndex+1, maxGuesses))
 
 		reader.Scan()
 		guess := strings.ToUpper(reader.Text())
@@ -171,12 +171,12 @@ func (w *wordle) run() {
 
 		if len(guess) != len(solution) {
 			w.write(fmt.Sprintf("%s is not a %v-letter word. Try again...\n", guess, wordLength))
-			w.rowIndex--
+			w.guessIndex--
 		}
 
 		if len(guess) == len(solution) {
-			w.guesses[w.rowIndex] = guess
-			w.evaluations[w.rowIndex] = w.evaluateGuess(guess)
+			w.guesses[w.guessIndex] = guess
+			w.evaluations[w.guessIndex] = w.evaluateGuess(guess)
 			w.displayGrid()
 		}
 
@@ -184,7 +184,7 @@ func (w *wordle) run() {
 			break
 		}
 
-		if w.rowIndex == maxGuesses-1 {
+		if w.guessIndex == maxGuesses-1 {
 			fmt.Println()
 			w.displaySolution()
 			os.Exit(1)
