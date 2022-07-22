@@ -37,45 +37,61 @@ var (
 	words embed.FS
 )
 
-// example: {"currentStreak":1,"maxStreak":1,"guesses":{"1":1,"2":0,"3":0,"4":0,"5":0,"6":0,"fail":0},"winPercentage":100,"gamesPlayed":1,"gamesWon":1,"averageGuesses":1}
-type statistics struct {
-	currentStreak  int
-	maxStreak      int
-	guesses        map[string]int
-	winsPercentage int
-	gamesPlayed    int
-	gamesWon       int
-	averageGuesses int
+// history homes historical data.
+// TODO: While not currently used, in the future it could be saved as a
+// JSON file (or perhaps pluggible backend?) to support a `wordle -statistics`
+// feature that displays a visualization of historical data, or something similar-ish.
+// For comparison, an example of the original statics JSON:
+// {"currentStreak":1,"maxStreak":1,"guesses":{"1":1,"2":0,"3":0,"4":0,"5":0,"6":0,"fail":0},"winPercentage":100,"gamesPlayed":1,"gamesWon":1,"averageGuesses":1}
+// However, history diverges from the original wordle and represents all this a
+// bit differently...
+type history struct {
+	// currentStreak is the current streak.
+	currentStreak int
+
+	// maxStreak is the maximum streak, historically.
+	maxStreak int
+
+	// games is a slice of past games played.
+	games []game
 }
 
+// game is the historical representation of a particular game played.
+type game struct {
+	// id is the index identifying of the game (i.e. the first game played, the second game played, etc.).
+	id int
+
+	// guessCount is the total number of guesses used before game completion.
+	guessCount int
+
+	// success represents whether the player successfully guessed the word.
+	success bool
+
+	// complete represents whether a game was played until completion.
+	complete bool
+
+	// time represents when the game was last played.
+	time time.Time
+}
+
+// wordle is a word guessing game based on Josh Wardle's Wordle (https://powerlanguage.co.uk/wordle/).
+// It represents an instance of the wordle game.
 type wordle struct {
 	in  io.Reader
 	out io.Writer
 
-	// a slice of guesses
+	// guesses is a slice of word guesses.
 	// example: []string{"BEACH", "", "", "", "", ""}
 	guesses [maxGuesses]string
 
-	// a slice of slices, representing each guess's evaluated chars
+	// evaluations is a slice of slices, representing an evaluation of each character of each guess.
 	evaluations [maxGuesses][wordLength]evaluation
 
-	// the current guess index
+	// guessIndex is the current guess index.
 	guessIndex int
 
-	// the solution word
+	// solution is the solution word.
 	solution string
-
-	// example: IN_PROGRESS, FAIL
-	// TODO: what are the other possible values?
-	gameStatus string
-
-	// example: 1644580347374
-	lastPlayedTS time.Time
-
-	// example: 1644580347374
-	lastCompletedTS time.Time
-
-	hardMode bool
 }
 
 func (w *wordle) displaySolution() {
@@ -193,6 +209,9 @@ func (w *wordle) run() {
 }
 
 func newWordle(word string, in io.Reader, out io.Writer) *wordle {
+	// TODO: Consider configuring wordle with a 'history' that includes 'games'.
+	// This could allow the wordle to render with a pre-populated grid showing
+	// the current day's game state if the game is still in-progress and incomplete.
 	w := &wordle{
 		in:       in,
 		out:      out,
@@ -206,7 +225,7 @@ func newWordle(word string, in io.Reader, out io.Writer) *wordle {
 		emptyGuessEvaluation[i] = absent
 	}
 
-	// By seeding w with dummy guesses and dummy evaluations,
+	// By seeding with dummy guesses and dummy evaluations,
 	// displayGrid displays remaining rows with each grid rendering.
 	for i := 0; i < maxGuesses; i++ {
 		w.evaluations[i] = emptyGuessEvaluation
@@ -229,6 +248,12 @@ func getWordFromFile() string {
 	return strings.ToUpper(strings.Split(string(data), ",")[daysSinceStart])
 }
 
+// getWordFromURL populates the wordle word via a random word chosen
+// from those listed at a remote URL, rather than via the in-baked
+// per-day list of wordle words.
+// While it's not currently used, it could be used in the future to
+// enable something like a `wordle -for-sport` feature that allows
+// users to play multiple games/day "for sport."
 func getWordFromURL() string {
 	// NOTE: this list inludes many uncommon and seemingly not-English words. Is there a better data source?
 	res, err := http.Get("https://raw.githubusercontent.com/dwyl/english-words/master/words_alpha.txt")
