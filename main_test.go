@@ -88,3 +88,38 @@ func TestRun(t *testing.T) {
 		})
 	}
 }
+
+func Test_evaluateGuess(t *testing.T) {
+	tests := []struct {
+		word     string
+		guess    string
+		expected [wordLength]evaluation
+	}{{
+		word:     "seaks",
+		guess:    "seaks",
+		expected: [wordLength]evaluation{correct, correct, correct, correct, correct},
+	}, {
+		word:     "seaks",
+		guess:    "beach",
+		expected: [wordLength]evaluation{absent, correct, correct, absent, absent},
+	}, {
+		word:     "later",
+		guess:    "beach",
+		expected: [wordLength]evaluation{absent, present, present, absent, absent},
+	}}
+
+	for _, test := range tests {
+		t.Run(fmt.Sprintf("the word is '%s' and the guess ie '%s'", test.word, test.guess), func(t *testing.T) {
+			w := &wordle{
+				solution: test.word,
+			}
+
+			evaluations := w.evaluateGuess(test.guess)
+			for i, eval := range evaluations {
+				if eval != test.expected[i] {
+					t.Errorf("expected '%s' to equal '%v'; got '%v'", test.guess, test.expected[i], eval)
+				}
+			}
+		})
+	}
+}

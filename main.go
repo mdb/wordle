@@ -15,16 +15,17 @@ import (
 )
 
 const (
-	maxGuesses int = 6
-	wordLength int = 5
+	maxGuesses     int    = 6
+	wordLength     int    = 5
+	emptyGuessChar string = "*"
 )
 
-type tileColor int
+type evaluation int
 
 const (
-	gray tileColor = iota
-	yellow
-	green
+	absent evaluation = iota
+	present
+	correct
 )
 
 var (
@@ -36,80 +37,129 @@ var (
 	words embed.FS
 )
 
-type wordle struct {
-	word    string
-	guesses []map[string][wordLength]tileColor
-	in      io.Reader
-	out     io.Writer
+// history homes historical data.
+// TODO: While not currently used, in the future it could be saved as a
+// JSON file (or perhaps pluggible backend?) to support a `wordle -statistics`
+// feature that displays a visualization of historical data, or something similar-ish.
+// For comparison, an example of the original statics JSON:
+// {"currentStreak":1,"maxStreak":1,"guesses":{"1":1,"2":0,"3":0,"4":0,"5":0,"6":0,"fail":0},"winPercentage":100,"gamesPlayed":1,"gamesWon":1,"averageGuesses":1}
+// However, history diverges from the original wordle and represents all this a
+// bit differently...
+type history struct {
+	// currentStreak is the current streak.
+	currentStreak int
+
+	// maxStreak is the maximum streak, historically.
+	maxStreak int
+
+	// games is a slice of past games played.
+	games []game
 }
 
-func (w *wordle) displayRow(word string, colors [wordLength]tileColor) {
-	for i, c := range word {
-		switch colors[i] {
-		case green:
-			w.write("\033[42m\033[1;30m")
-		case yellow:
-			w.write("\033[43m\033[1;30m")
-		case gray:
-			w.write("\033[40m\033[1;37m")
-		}
+// game is the historical representation of a particular game played.
+type game struct {
+	// id is the index identifying of the game (i.e. the first game played, the second game played, etc.).
+	id int
 
-		w.write(fmt.Sprintf(" %c ", c))
-		w.write("\033[m\033[m")
+	// guessCount is the total number of guesses used before game completion.
+	guessCount int
+
+	// success represents whether the player successfully guessed the word.
+	success bool
+
+	// complete represents whether a game was played until completion.
+	complete bool
+
+	// time represents when the game was last played.
+	time time.Time
+}
+
+// wordle is a word guessing game based on Josh Wardle's Wordle (https://powerlanguage.co.uk/wordle/).
+// It represents an instance of the wordle game.
+type wordle struct {
+	in  io.Reader
+	out io.Writer
+
+	// guesses is a slice of word guesses.
+	// example: []string{"BEACH", "", "", "", "", ""}
+	guesses [maxGuesses]string
+
+	// evaluations is a slice of slices, representing an evaluation of each character of each guess.
+	evaluations [maxGuesses][wordLength]evaluation
+
+	// guessIndex is the current guess index.
+	guessIndex int
+
+	// solution is the solution word.
+	solution string
+}
+
+func (w *wordle) displaySolution() {
+	for _, char := range w.solution {
+		w.displayGreenTile(char)
 	}
 
 	w.write("\n")
 }
 
-func (w *wordle) displayGrid(guess string, guessCount int) {
-	tileColors := w.getLetterTileColors(guess)
-	w.guesses = append(w.guesses, map[string][wordLength]tileColor{guess: tileColors})
-
-	for _, guess := range w.guesses {
-		for g, colors := range guess {
-			w.displayRow(g, colors)
+func (w *wordle) displayGrid() {
+	for i, guess := range w.guesses {
+		for j, guessLetter := range guess {
+			switch w.evaluations[i][j] {
+			case correct:
+				w.displayGreenTile(guessLetter)
+			case present:
+				w.displayYellowTile(guessLetter)
+			case absent:
+				w.displayGrayTile(guessLetter)
+			}
 		}
-	}
 
-	w.displayEmptyRows(guessCount)
+		w.write("\n")
+	}
 }
 
-func (w *wordle) getLetterTileColors(guess string) [wordLength]tileColor {
-	colors := [wordLength]tileColor{}
+func (w *wordle) displayGreenTile(char rune) {
+	w.write("\033[42m\033[1;30m")
+	w.displayOnTile(char)
+}
 
-	for i := range colors {
-		colors[i] = gray
+func (w *wordle) displayYellowTile(char rune) {
+	w.write("\033[43m\033[1;30m")
+	w.displayOnTile(char)
+}
+
+func (w *wordle) displayGrayTile(char rune) {
+	w.write("\033[40m\033[1;37m")
+	w.displayOnTile(char)
+}
+
+func (w *wordle) displayOnTile(char rune) {
+	w.write(fmt.Sprintf(" %c ", char))
+	w.write("\033[m\033[m")
+}
+
+func (w *wordle) evaluateGuess(guess string) [wordLength]evaluation {
+	evaluation := [wordLength]evaluation{}
+
+	for i := 0; i < wordLength; i++ {
+		evaluation[i] = absent
 	}
 
 	for j, guessLetter := range guess {
-		for k, letter := range w.word {
+		for k, letter := range w.solution {
 			if guessLetter == letter {
 				if j == k {
-					colors[j] = green
+					evaluation[j] = correct
 					break
 				}
 
-				colors[j] = yellow
+				evaluation[j] = present
 			}
 		}
 	}
 
-	return colors
-}
-
-func (w *wordle) displayEmptyRows(guessCount int) {
-	emptyGuessChars := []string{}
-	for i := 0; i < wordLength; i++ {
-		emptyGuessChars = append(emptyGuessChars, "*")
-	}
-
-	emptyGuess := strings.Join(emptyGuessChars, "")
-	emptyTileColors := w.getLetterTileColors(emptyGuess)
-	emptyRowCount := maxGuesses - guessCount - 1
-
-	for i := 0; i < emptyRowCount; i++ {
-		w.displayRow(emptyGuess, emptyTileColors)
-	}
+	return evaluation
 }
 
 func (w *wordle) write(str string) {
@@ -118,14 +168,15 @@ func (w *wordle) write(str string) {
 
 func (w *wordle) run() {
 	reader := bufio.NewScanner(w.in)
+	solution := w.solution
 
 	w.write(fmt.Sprintf("Version: \t%s\n", version))
 	w.write("Info: \t\thttps://github.com/mdb/wordle\n")
 	w.write("About: \t\tA CLI adaptation of Josh Wardle's Wordle (https://powerlanguage.co.uk/wordle/)\n\n")
 	w.write(fmt.Sprintf("Guess a %v-letter word within %v guesses...\n", wordLength, maxGuesses))
 
-	for guessCount := 0; guessCount < maxGuesses; guessCount++ {
-		w.write(fmt.Sprintf("\nGuess (%v/%v): ", len(w.guesses)+1, maxGuesses))
+	for w.guessIndex = 0; w.guessIndex < maxGuesses; w.guessIndex++ {
+		w.write(fmt.Sprintf("\nGuess (%v/%v): ", w.guessIndex+1, maxGuesses))
 
 		reader.Scan()
 		guess := strings.ToUpper(reader.Text())
@@ -134,33 +185,54 @@ func (w *wordle) run() {
 			break
 		}
 
-		if len(guess) != len(w.word) {
+		if len(guess) != len(solution) {
 			w.write(fmt.Sprintf("%s is not a %v-letter word. Try again...\n", guess, wordLength))
-			guessCount--
+			w.guessIndex--
 		}
 
-		if len(guess) == len(w.word) {
-			w.displayGrid(guess, guessCount)
+		if len(guess) == len(solution) {
+			w.guesses[w.guessIndex] = guess
+			w.evaluations[w.guessIndex] = w.evaluateGuess(guess)
+			w.displayGrid()
 		}
 
-		if guess == w.word {
+		if guess == solution {
 			break
 		}
 
-		if guessCount == maxGuesses-1 {
+		if w.guessIndex == maxGuesses-1 {
 			fmt.Println()
-			w.displayRow(w.word, w.getLetterTileColors(w.word))
+			w.displaySolution()
 			os.Exit(1)
 		}
 	}
 }
 
 func newWordle(word string, in io.Reader, out io.Writer) *wordle {
-	return &wordle{
-		word: word,
-		in:   in,
-		out:  out,
+	// TODO: Consider configuring wordle with a 'history' that includes 'games'.
+	// This could allow the wordle to render with a pre-populated grid showing
+	// the current day's game state if the game is still in-progress and incomplete.
+	w := &wordle{
+		in:       in,
+		out:      out,
+		solution: word,
 	}
+	emptyGuess := ""
+	emptyGuessEvaluation := [wordLength]evaluation{}
+
+	for i := 0; i < wordLength; i++ {
+		emptyGuess = emptyGuess + emptyGuessChar
+		emptyGuessEvaluation[i] = absent
+	}
+
+	// By seeding with dummy guesses and dummy evaluations,
+	// displayGrid displays remaining rows with each grid rendering.
+	for i := 0; i < maxGuesses; i++ {
+		w.evaluations[i] = emptyGuessEvaluation
+		w.guesses[i] = emptyGuess
+	}
+
+	return w
 }
 
 func getWordFromFile() string {
@@ -176,6 +248,12 @@ func getWordFromFile() string {
 	return strings.ToUpper(strings.Split(string(data), ",")[daysSinceStart])
 }
 
+// getWordFromURL populates the wordle word via a random word chosen
+// from those listed at a remote URL, rather than via the in-baked
+// per-day list of wordle words.
+// While it's not currently used, it could be used in the future to
+// enable something like a `wordle -for-sport` feature that allows
+// users to play multiple games/day "for sport."
 func getWordFromURL() string {
 	// NOTE: this list inludes many uncommon and seemingly not-English words. Is there a better data source?
 	res, err := http.Get("https://raw.githubusercontent.com/dwyl/english-words/master/words_alpha.txt")
