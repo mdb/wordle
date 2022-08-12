@@ -23,16 +23,23 @@ const (
 type evaluation int
 
 const (
+	// absent indicates a character in a guess is not present in the solution word.
 	absent evaluation = iota
+
+	// present indicates a character in a guess is present in the solution word, but
+	// that it appears in a different position in the solution word.
 	present
+
+	// correct indicates the character in a guess is present in the solution word, and
+	// that it appears in the same position in both the guess and the solution word.
 	correct
 )
 
 var (
-	// passed in at build time
+	// version is passed in at build time.
 	version string
 
-	// Embed the words directory in the compiled binary.
+	// words is an instance of the words directory embedded in the compiled binary.
 	//go:embed words
 	words embed.FS
 )
