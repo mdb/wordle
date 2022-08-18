@@ -26,6 +26,7 @@ const (
 	absent evaluation = iota
 	present
 	correct
+	unknown
 )
 
 var (
@@ -97,6 +98,53 @@ type wordle struct {
 func (w *wordle) displaySolution() {
 	for _, char := range w.solution {
 		w.displayGreenTile(char)
+	}
+
+	w.write("\n")
+}
+
+// TODO: this is quite inelegant
+func (w *wordle) displayKeyboard() {
+	keyboard := []string{"QWERTYUIOP", "ASDFGHJKL", "ZXCVBNM"}
+
+	for _, row := range keyboard {
+		w.write("\n")
+
+		for _, char := range row {
+			var charEvaluation evaluation = unknown
+
+			for _, guess := range w.guesses {
+				if strings.Contains(guess, emptyGuessChar) {
+					continue
+				}
+
+				for j, guessLetter := range guess {
+					if guessLetter != char {
+						continue
+					}
+
+					if string(w.solution[j]) == string(guessLetter) {
+						charEvaluation = correct
+					} else if strings.Contains(w.solution, string(guessLetter)) {
+						charEvaluation = present
+					} else {
+						charEvaluation = absent
+					}
+				}
+			}
+
+			// TODO: don't overwrite 'correct' char status with each guess
+			switch charEvaluation {
+			case correct:
+				w.displayGreenTile(char)
+			case present:
+				w.displayYellowTile(char)
+			case absent:
+				w.displayGrayTile(' ')
+			default:
+				w.displayGrayTile(char)
+			}
+		}
 	}
 
 	w.write("\n")
@@ -195,6 +243,8 @@ func (w *wordle) run() {
 			w.evaluations[w.guessIndex] = w.evaluateGuess(guess)
 			w.displayGrid()
 		}
+
+		w.displayKeyboard()
 
 		if guess == solution {
 			break
