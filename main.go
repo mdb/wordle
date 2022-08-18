@@ -88,6 +88,12 @@ type wordle struct {
 	// evaluations is a slice of slices, representing an evaluation of each character of each guess.
 	evaluations [maxGuesses][wordLength]evaluation
 
+	// keyboardChars is a slice of all keyboard characters
+	keyboardChars []rune
+
+	// keyboard is a map of alphabetical keyboard keys to an evaluation of each key character
+	keyboard map[rune]evaluation
+
 	// guessIndex is the current guess index.
 	guessIndex int
 
@@ -103,47 +109,23 @@ func (w *wordle) displaySolution() {
 	w.write("\n")
 }
 
-// TODO: this is quite inelegant
 func (w *wordle) displayKeyboard() {
-	keyboard := []string{"QWERTYUIOP", "ASDFGHJKL", "ZXCVBNM"}
+	w.write("\n")
 
-	for _, row := range keyboard {
-		w.write("\n")
+	for _, char := range w.keyboardChars {
+		if char == 'A' || char == 'Z' {
+			w.write("\n")
+		}
 
-		for _, char := range row {
-			var charEvaluation evaluation = unknown
-
-			for _, guess := range w.guesses {
-				if strings.Contains(guess, emptyGuessChar) {
-					continue
-				}
-
-				for j, guessLetter := range guess {
-					if guessLetter != char {
-						continue
-					}
-
-					if string(w.solution[j]) == string(guessLetter) {
-						charEvaluation = correct
-					} else if strings.Contains(w.solution, string(guessLetter)) {
-						charEvaluation = present
-					} else {
-						charEvaluation = absent
-					}
-				}
-			}
-
-			// TODO: don't overwrite 'correct' char status with each guess
-			switch charEvaluation {
-			case correct:
-				w.displayGreenTile(char)
-			case present:
-				w.displayYellowTile(char)
-			case absent:
-				w.displayGrayTile(' ')
-			default:
-				w.displayGrayTile(char)
-			}
+		switch w.keyboard[char] {
+		case correct:
+			w.displayGreenTile(char)
+		case present:
+			w.displayYellowTile(char)
+		case absent:
+			w.displayGrayTile(' ')
+		default:
+			w.displayGrayTile(char)
 		}
 	}
 
@@ -240,7 +222,14 @@ func (w *wordle) run() {
 
 		if len(guess) == len(solution) {
 			w.guesses[w.guessIndex] = guess
-			w.evaluations[w.guessIndex] = w.evaluateGuess(guess)
+			evaluations := w.evaluateGuess(guess)
+
+			w.evaluations[w.guessIndex] = evaluations
+
+			for i, eval := range evaluations {
+				w.keyboard[[]rune(string(guess[i]))[0]] = eval
+			}
+
 			w.displayGrid()
 		}
 
@@ -280,6 +269,13 @@ func newWordle(word string, in io.Reader, out io.Writer) *wordle {
 	for i := 0; i < maxGuesses; i++ {
 		w.evaluations[i] = emptyGuessEvaluation
 		w.guesses[i] = emptyGuess
+	}
+
+	w.keyboardChars = []rune("QWERTYUIOPASDFGHJKLZXCVBNM")
+	// Seed the initial keyboard with each character having an unknown evaluation.
+	w.keyboard = map[rune]evaluation{}
+	for _, char := range w.keyboardChars {
+		w.keyboard[char] = unknown
 	}
 
 	return w
