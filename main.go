@@ -89,6 +89,9 @@ type wordle struct {
 	evaluations [maxGuesses][wordLength]evaluation
 
 	// keyboardChars is a slice of all keyboard characters
+	// Because Go does not preserve the order of maps, keyboardChars
+	// stores the keyboard key characters in the order in which they
+	// typically appear on many keyboards.
 	keyboardChars []rune
 
 	// keyboard is a map of alphabetical keyboard keys to an evaluation of each key character
