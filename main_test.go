@@ -8,6 +8,22 @@ import (
 )
 
 func TestRun(t *testing.T) {
+	emptyChar := fmt.Sprintf("\033[40m\033[1;37m %s \033[m\033[m", emptyGuessChar)
+	emptyRow := strings.Join([]string{
+		emptyChar,
+		emptyChar,
+		emptyChar,
+		emptyChar,
+		emptyChar,
+		"\n",
+	}, "")
+	emptyRows := strings.Join([]string{
+		emptyRow,
+		emptyRow,
+		emptyRow,
+		emptyRow,
+	}, "")
+
 	tests := []struct {
 		word   string
 		inputs []string
@@ -42,6 +58,7 @@ func TestRun(t *testing.T) {
 			"\033[42m\033[1;30m C \033[m\033[m",
 			"\033[42m\033[1;30m H \033[m\033[m",
 			"\n",
+			emptyRows,
 		}, ""),
 	}, {
 		word:   "BEATS",
@@ -53,6 +70,7 @@ func TestRun(t *testing.T) {
 			"\033[43m\033[1;30m S \033[m\033[m",
 			"\033[43m\033[1;30m T \033[m\033[m",
 			"\n",
+			emptyRows,
 		}, ""),
 	}, {
 		word:   "BOOTY",
@@ -64,6 +82,7 @@ func TestRun(t *testing.T) {
 			"\033[40m\033[1;37m S \033[m\033[m",
 			"\033[40m\033[1;37m E \033[m\033[m",
 			"\n",
+			emptyRows,
 		}, ""),
 	}}
 
