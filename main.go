@@ -26,6 +26,7 @@ const (
 	absent evaluation = iota
 	present
 	correct
+	unknown
 )
 
 var (
@@ -87,6 +88,15 @@ type wordle struct {
 	// evaluations is a slice of slices, representing an evaluation of each character of each guess.
 	evaluations [maxGuesses][wordLength]evaluation
 
+	// keyboardChars is a slice of all keyboard characters
+	// Because Go does not preserve the order of maps, keyboardChars
+	// stores the keyboard key characters in the order in which they
+	// typically appear on many keyboards.
+	keyboardChars []rune
+
+	// keyboard is a map of alphabetical keyboard keys to an evaluation of each key character
+	keyboard map[rune]evaluation
+
 	// guessIndex is the current guess index.
 	guessIndex int
 
@@ -97,6 +107,29 @@ type wordle struct {
 func (w *wordle) displaySolution() {
 	for _, char := range w.solution {
 		w.displayGreenTile(char)
+	}
+
+	w.write("\n")
+}
+
+func (w *wordle) displayKeyboard() {
+	w.write("\n")
+
+	for _, char := range w.keyboardChars {
+		if char == 'A' || char == 'Z' {
+			w.write("\n")
+		}
+
+		switch w.keyboard[char] {
+		case correct:
+			w.displayGreenTile(char)
+		case present:
+			w.displayYellowTile(char)
+		case absent:
+			w.displayGrayTile(' ')
+		default:
+			w.displayGrayTile(char)
+		}
 	}
 
 	w.write("\n")
@@ -192,9 +225,18 @@ func (w *wordle) run() {
 
 		if len(guess) == len(solution) {
 			w.guesses[w.guessIndex] = guess
-			w.evaluations[w.guessIndex] = w.evaluateGuess(guess)
+			evaluations := w.evaluateGuess(guess)
+
+			w.evaluations[w.guessIndex] = evaluations
+
+			for i, eval := range evaluations {
+				w.keyboard[[]rune(string(guess[i]))[0]] = eval
+			}
+
 			w.displayGrid()
 		}
+
+		w.displayKeyboard()
 
 		if guess == solution {
 			break
@@ -230,6 +272,13 @@ func newWordle(word string, in io.Reader, out io.Writer) *wordle {
 	for i := 0; i < maxGuesses; i++ {
 		w.evaluations[i] = emptyGuessEvaluation
 		w.guesses[i] = emptyGuess
+	}
+
+	w.keyboardChars = []rune("QWERTYUIOPASDFGHJKLZXCVBNM")
+	// Seed the initial keyboard with each character having an unknown evaluation.
+	w.keyboard = map[rune]evaluation{}
+	for _, char := range w.keyboardChars {
+		w.keyboard[char] = unknown
 	}
 
 	return w
